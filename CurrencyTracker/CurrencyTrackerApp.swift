@@ -9,7 +9,7 @@ struct CurrencyTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            DashboardView()
         }
     }
 }

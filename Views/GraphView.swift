@@ -11,113 +11,120 @@ struct GraphView: View {
     @State private var scrollPosition: Date = Date()
     @State private var selectedRate: HistoricalRate?
 
-
     let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW"]
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("📈 30-Day Exchange Rate")
-                .font(.title2)
-                .bold()
-            
-            // Currency selection
-            VStack(alignment: .leading, spacing: 10) {
-                Text("From:")
-                Picker("From", selection: $baseCurrency) {
-                    ForEach(currencyList, id: \.self) { currency in
-                        Text(currency)
-                    }
-                }
-                .pickerStyle(.menu)
-                
-                Text("To:")
-                Picker("To", selection: $targetCurrency) {
-                    ForEach(currencyList, id: \.self) { currency in
-                        Text(currency)
-                    }
-                }
-                .pickerStyle(.menu)
-            }
-            
-            Button("Load Chart") {
-                fetchRates()
-            }
-            .buttonStyle(.borderedProminent)
-            
-            if isLoading {
-                ProgressView()
-            } else if rates.isEmpty {
-                Text("Select currencies and tap 'Load Chart'")
-                    .foregroundColor(.gray)
-            } else {
-                Chart {
-                    ForEach(rates) { rate in
-                        LineMark(
-                            x: .value("Date", rate.date),
-                            y: .value("Rate", rate.rate)
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(.blue)
-                        .symbol(Circle()) // 👈 makes dots tappable
-                        .annotation(position: .top) {
-                            Text(String(format: "%.2f", rate.rate))
-                                .font(.caption2)
-                                .padding(5)
-                                .background(Color.white)
-                                .cornerRadius(5)
-                                .shadow(radius: 2)
+        ScrollView {
+            VStack(spacing: 20) {
+                // Title
+                Text("📈 30-Day Exchange Rate")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+
+                // Currency Selection
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading) {
+                        Text("From:")
+                            .font(.caption)
+                        Picker("From", selection: $baseCurrency) {
+                            ForEach(currencyList, id: \.self) { Text($0) }
                         }
+                        .pickerStyle(.menu)
                     }
-                }
-                .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 5)) { value in
-                        AxisGridLine()
-                        AxisTick()
-                        AxisValueLabel(format: .dateTime.month().day(), centered: true)
-                    }
-                }
-                .chartYScale(domain: minY...maxY)
-                .chartScrollableAxes(.horizontal)
-                .chartScrollPosition(x: $scrollPosition)
-                .chartOverlay { proxy in
-                    GeometryReader { geo in
-                        Rectangle().fill(Color.clear).contentShape(Rectangle())
-                            .gesture(
-                                DragGesture()
-                                    .onChanged { value in
-                                        let location = value.location
-                                        if let date: Date = proxy.value(atX: location.x) {
-                                            if let closest = rates.min(by: {
-                                                abs($0.date.timeIntervalSince1970 - date.timeIntervalSince1970) <
-                                                abs($1.date.timeIntervalSince1970 - date.timeIntervalSince1970)
-                                            }) {
-                                                selectedRate = closest
-                                            }
-                                        }
-                                    }
-                                    .onEnded { _ in
-                                        selectedRate = nil
-                                    }
-                            )
+
+                    VStack(alignment: .leading) {
+                        Text("To:")
+                            .font(.caption)
+                        Picker("To", selection: $targetCurrency) {
+                            ForEach(currencyList, id: \.self) { Text($0) }
+                        }
+                        .pickerStyle(.menu)
                     }
                 }
 
-                .frame(height: 300)
-                .padding()
-                if let selected = selectedRate {
-                    VStack(spacing: 5) {
-                        Text("\(selected.date.formatted(date: .abbreviated, time: .omitted))")
-                            .font(.caption)
-                        Text(String(format: "%.2f %@", selected.rate, targetCurrency))
-                            .bold()
+                // Load Button
+                Button("Load Chart") {
+                    fetchRates()
+                }
+                .buttonStyle(.borderedProminent)
+
+                // Graph View
+                if isLoading {
+                    ProgressView()
+                } else if rates.isEmpty {
+                    Text("Select currencies and tap 'Load Chart'")
+                        .foregroundColor(.gray)
+                } else {
+                    Chart {
+                        ForEach(rates) { rate in
+                            LineMark(
+                                x: .value("Date", rate.date),
+                                y: .value("Rate", rate.rate)
+                            )
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(.blue)
+                            .symbol(Circle())
+                            .annotation(position: .top) {
+                                Text(String(format: "%.2f", rate.rate))
+                                    .font(.caption2)
+                                    .padding(4)
+                                    .background(.white)
+                                    .cornerRadius(4)
+                            }
+                        }
                     }
-                    .padding(8)
-                    .background(.thinMaterial)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue, lineWidth: 1))
-                    .transition(.opacity)
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel(format: .dateTime.month().day(), centered: true)
+                        }
+                    }
+                    .chartYScale(domain: minY...maxY)
+                    .chartScrollableAxes(.horizontal)
+                    .chartScrollPosition(x: $scrollPosition)
+                    .chartOverlay { proxy in
+                        GeometryReader { geo in
+                            Rectangle().fill(Color.clear).contentShape(Rectangle())
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            let location = value.location
+                                            if let date: Date = proxy.value(atX: location.x) {
+                                                selectedRate = rates.min(by: {
+                                                    abs($0.date.timeIntervalSince1970 - date.timeIntervalSince1970) <
+                                                    abs($1.date.timeIntervalSince1970 - date.timeIntervalSince1970)
+                                                })
+                                            }
+                                        }
+                                        .onEnded { _ in
+                                            selectedRate = nil
+                                        }
+                                )
+                        }
+                    }
+                    .frame(height: 300)
+                    .padding(.bottom, selectedRate == nil ? 0 : 8)
+
+                    if let selected = selectedRate {
+                        VStack(spacing: 4) {
+                            Text("\(selected.date.formatted(date: .abbreviated, time: .omitted))")
+                                .font(.caption)
+                            Text(String(format: "%.2f %@", selected.rate, targetCurrency))
+                                .font(.headline)
+                        }
+                        .padding(8)
+                        .background(.thinMaterial)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.blue.opacity(0.5), lineWidth: 1)
+                        )
+                        .transition(.opacity)
+                    }
                 }
             }
+            .padding()
         }
     }
 
@@ -151,8 +158,7 @@ struct GraphView: View {
                     } else {
                         return nil
                     }
-                }
-                .sorted(by: { $0.date < $1.date })
+                }.sorted(by: { $0.date < $1.date })
 
                 let minRate = parsedRates.map { $0.rate }.min() ?? 0
                 let maxRate = parsedRates.map { $0.rate }.max() ?? 0
@@ -163,7 +169,6 @@ struct GraphView: View {
                     maxY = maxRate
                     isLoading = false
                 }
-
             } catch {
                 print("Chart decode error:", error)
                 DispatchQueue.main.async {
@@ -172,15 +177,4 @@ struct GraphView: View {
             }
         }.resume()
     }
-
-}
-
-struct HistoricalRate: Identifiable {
-    var id: Date { date }
-    let date: Date
-    let rate: Double
-}
-
-struct ChartExchangeRateResponse: Codable {
-    let rates: [String: [String: Double]]
 }

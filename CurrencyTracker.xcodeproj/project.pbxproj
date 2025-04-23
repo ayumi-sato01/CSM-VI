@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		675EE27D2DB88FE600C9CF34 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675EE27C2DB88FE600C9CF34 /* DashboardView.swift */; };
+		675EE27F2DB93A7E00C9CF34 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675EE27E2DB93A7E00C9CF34 /* LogsView.swift */; };
+		675EE2812DB93B8100C9CF34 /* LogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675EE2802DB93B8100C9CF34 /* LogEntry.swift */; };
+		675EE2832DB93E0E00C9CF34 /* ChartModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675EE2822DB93E0E00C9CF34 /* ChartModel.swift */; };
 		6799EFE62DB01D8700C3D1A0 /* ExchangeRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6799EFE52DB01D8700C3D1A0 /* ExchangeRate.swift */; };
 		6799EFE82DB01D9C00C3D1A0 /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6799EFE72DB01D9C00C3D1A0 /* UserSettings.swift */; };
 		6799EFEB2DB01DE900C3D1A0 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6799EFEA2DB01DE900C3D1A0 /* HomeView.swift */; };
@@ -32,6 +36,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		675EE27C2DB88FE600C9CF34 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		675EE27E2DB93A7E00C9CF34 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
+		675EE2802DB93B8100C9CF34 /* LogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogEntry.swift; sourceTree = "<group>"; };
+		675EE2822DB93E0E00C9CF34 /* ChartModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartModel.swift; sourceTree = "<group>"; };
 		6799EFB72DB01CAA00C3D1A0 /* CurrencyTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurrencyTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6799EFC72DB01CAD00C3D1A0 /* CurrencyTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurrencyTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6799EFD12DB01CAD00C3D1A0 /* CurrencyTrackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurrencyTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -112,6 +120,8 @@
 			children = (
 				6799EFE52DB01D8700C3D1A0 /* ExchangeRate.swift */,
 				6799EFE72DB01D9C00C3D1A0 /* UserSettings.swift */,
+				675EE2802DB93B8100C9CF34 /* LogEntry.swift */,
+				675EE2822DB93E0E00C9CF34 /* ChartModel.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -122,6 +132,8 @@
 				6799EFEA2DB01DE900C3D1A0 /* HomeView.swift */,
 				6799EFEC2DB01DF900C3D1A0 /* AlertSettingsView.swift */,
 				6799EFEE2DB01E0C00C3D1A0 /* GraphView.swift */,
+				675EE27C2DB88FE600C9CF34 /* DashboardView.swift */,
+				675EE27E2DB93A7E00C9CF34 /* LogsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -271,6 +283,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				6799EFE82DB01D9C00C3D1A0 /* UserSettings.swift in Sources */,
+				675EE27F2DB93A7E00C9CF34 /* LogsView.swift in Sources */,
+				675EE2812DB93B8100C9CF34 /* LogEntry.swift in Sources */,
+				675EE27D2DB88FE600C9CF34 /* DashboardView.swift in Sources */,
+				675EE2832DB93E0E00C9CF34 /* ChartModel.swift in Sources */,
 				6799EFEF2DB01E0C00C3D1A0 /* GraphView.swift in Sources */,
 				6799EFE62DB01D8700C3D1A0 /* ExchangeRate.swift in Sources */,
 				6799EFEB2DB01DE900C3D1A0 /* HomeView.swift in Sources */,
