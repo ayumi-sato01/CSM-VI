@@ -16,7 +16,7 @@ struct FavoriteRatesView: View {
     @State private var selectedBase = "USD"
     @State private var selectedTarget = "JPY"
 
-    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW"]
+    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW", "ZAR"]
 
     var body: some View {
         NavigationStack {

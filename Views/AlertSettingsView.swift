@@ -13,7 +13,10 @@ struct AlertSettingsView: View {
     @AppStorage("dailyAlertHour") private var alertHour = 8
     @AppStorage("dailyAlertMinute") private var alertMinute = 0
 
-    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW"]
+    @State private var isDailyAlertEnabled = false
+    @State private var currentRateText: String = ""
+
+    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW", "ZAR"]
 
     var body: some View {
         ScrollView {
@@ -56,53 +59,62 @@ struct AlertSettingsView: View {
                         checkAndSendThresholdNotification()
                     }
                     .buttonStyle(.borderedProminent)
+
+                    if !currentRateText.isEmpty {
+                        Text(currentRateText)
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                    }
                 }
 
                 Divider()
 
-                // - Daily Notification
+                // MARK: - Daily Notification
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Daily Exchange Rate Notification")
                         .font(.headline)
 
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("From")
-                            Picker("Daily Base", selection: $dailyBase) {
-                                ForEach(currencyList, id: \.self) { Text($0) }
-                            }.pickerStyle(.menu)
+                    Toggle("Enable Daily Alert", isOn: $isDailyAlertEnabled)
+
+                    if isDailyAlertEnabled {
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("From")
+                                Picker("Daily Base", selection: $dailyBase) {
+                                    ForEach(currencyList, id: \.self) { Text($0) }
+                                }.pickerStyle(.menu)
+                            }
+
+                            VStack(alignment: .leading) {
+                                Text("To")
+                                Picker("Daily Target", selection: $dailyTarget) {
+                                    ForEach(currencyList, id: \.self) { Text($0) }
+                                }.pickerStyle(.menu)
+                            }
                         }
 
-                        VStack(alignment: .leading) {
-                            Text("To")
-                            Picker("Daily Target", selection: $dailyTarget) {
-                                ForEach(currencyList, id: \.self) { Text($0) }
-                            }.pickerStyle(.menu)
+                        DatePicker("Alert Time", selection: Binding(
+                            get: {
+                                Calendar.current.date(bySettingHour: alertHour, minute: alertMinute, second: 0, of: Date()) ?? Date()
+                            },
+                            set: { date in
+                                let comps = Calendar.current.dateComponents([.hour, .minute], from: date)
+                                alertHour = comps.hour ?? 8
+                                alertMinute = comps.minute ?? 0
+                            }),
+                            displayedComponents: .hourAndMinute
+                        )
+
+                        Button("Schedule Daily Alert") {
+                            scheduleDailyNotification()
                         }
-                    }
+                        .buttonStyle(.borderedProminent)
 
-                    DatePicker("Alert Time", selection: Binding(
-                        get: {
-                            Calendar.current.date(bySettingHour: alertHour, minute: alertMinute, second: 0, of: Date()) ?? Date()
-                        },
-                        set: { date in
-                            let comps = Calendar.current.dateComponents([.hour, .minute], from: date)
-                            alertHour = comps.hour ?? 8
-                            alertMinute = comps.minute ?? 0
-                        }),
-                        displayedComponents: .hourAndMinute
-                    )
-
-                    Button("Schedule Daily Alert") {
-                        scheduleDailyNotification()
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    // Summary
-                    if let scheduledDate = Calendar.current.date(bySettingHour: alertHour, minute: alertMinute, second: 0, of: Date()) {
-                        Text("🗓️ Daily alert set at \(formattedTime(scheduledDate)) for \(dailyBase) → \(dailyTarget)")
-                            .font(.footnote)
-                            .foregroundColor(.gray)
+                        if let scheduledDate = Calendar.current.date(bySettingHour: alertHour, minute: alertMinute, second: 0, of: Date()) {
+                            Text("📅 Daily alert set at \(formattedTime(scheduledDate)) for \(dailyBase) → \(dailyTarget)")
+                                .font(.footnote)
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
             }
@@ -113,7 +125,7 @@ struct AlertSettingsView: View {
         }
     }
 
-    //  - Notification Permission
+    // MARK: - Notification Permission
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
@@ -124,7 +136,7 @@ struct AlertSettingsView: View {
         }
     }
 
-    //  - Threshold Notification
+    // MARK: - Threshold Alert Check
     func checkAndSendThresholdNotification() {
         guard let threshold = Double(alertRate) else { return }
 
@@ -134,21 +146,31 @@ struct AlertSettingsView: View {
         URLSession.shared.dataTask(with: url) { data, _, _ in
             guard let data = data,
                   let result = try? JSONDecoder().decode(ExchangeRateResponse.self, from: data),
-                  let rate = result.rates[alertTargetCurrency],
-                  rate < threshold else { return }
+                  let rate = result.rates[alertTargetCurrency] else {
+                DispatchQueue.main.async {
+                    currentRateText = "Failed to fetch current rate."
+                }
+                return
+            }
 
-            let content = UNMutableNotificationContent()
-            content.title = "🎯 Threshold Alert Triggered!"
-            content.body = "1 \(alertBaseCurrency) = \(String(format: "%.2f", rate)) \(alertTargetCurrency)"
+            DispatchQueue.main.async {
+                currentRateText = "Current rate: 1 \(alertBaseCurrency) = \(String(format: "%.2f", rate)) \(alertTargetCurrency)"
+            }
 
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
-            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+            if rate < threshold {
+                let content = UNMutableNotificationContent()
+                content.title = "🎯 Threshold Alert Triggered!"
+                content.body = "1 \(alertBaseCurrency) = \(String(format: "%.2f", rate)) \(alertTargetCurrency)"
 
-            UNUserNotificationCenter.current().add(request)
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+                UNUserNotificationCenter.current().add(request)
+            }
         }.resume()
     }
 
-    // - Daily Notification
+    // MARK: - Daily Notification
     func scheduleDailyNotification() {
         let urlString = "https://api.frankfurter.app/latest?from=\(dailyBase)&to=\(dailyTarget)"
         guard let url = URL(string: urlString) else { return }
@@ -173,7 +195,7 @@ struct AlertSettingsView: View {
         }.resume()
     }
 
-    // - Formatter
+    // MARK: - Time Formatter
     func formattedTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short

@@ -7,7 +7,7 @@ struct HomeView: View {
     @State private var isLoading = false
     @State private var amount: String = "1" // Default amount
 
-    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW"]
+    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW", "ZAR"]
 
     var body: some View {
         VStack(spacing: 20) {

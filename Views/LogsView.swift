@@ -11,7 +11,7 @@ struct LogView: View {
     @State private var note = ""
     @State private var isLoading = false
 
-    private let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW"]
+    private let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW", "ZAR"]
 
     var body: some View {
         ScrollView {

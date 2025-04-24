@@ -15,19 +15,17 @@ final class CurrencyTrackerUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // Check for title "Zenny"
+        // Check for title and subtitle
         XCTAssertTrue(app.staticTexts["Zenny"].exists)
-
-        // Check for subtitle
         XCTAssertTrue(app.staticTexts["Currency Tracker"].exists)
 
-        // Check that the exchange rate placeholder exists
-        XCTAssertTrue(app.staticTexts["Rate: 153.22"].exists)
+        // Check live exchange rate label
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "1")).firstMatch.exists)
 
-        // Check graph placeholder text
-        XCTAssertTrue(app.staticTexts["5-Day Trend Graph"].exists)
+        // Check for existence of a chart container
+        XCTAssertTrue(app.otherElements.containing(.other, identifier: "Chart").firstMatch.exists)
 
-        // Check bottom nav buttons
+        // Bottom navigation buttons
         XCTAssertTrue(app.staticTexts["Log"].exists)
         XCTAssertTrue(app.staticTexts["Graph"].exists)
         XCTAssertTrue(app.staticTexts["Favorite"].exists)

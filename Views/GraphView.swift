@@ -11,7 +11,7 @@ struct GraphView: View {
     @State private var scrollPosition: Date = Date()
     @State private var selectedRate: HistoricalRate?
 
-    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW"]
+    let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW", "ZAR"]
 
     var body: some View {
         ScrollView {
@@ -64,25 +64,26 @@ struct GraphView: View {
                             .interpolationMethod(.catmullRom)
                             .foregroundStyle(.blue)
                             .symbol(Circle())
-                            .annotation(position: .top) {
-                                Text(String(format: "%.2f", rate.rate))
-                                    .font(.caption2)
-                                    .padding(4)
-                                    .background(.white)
-                                    .cornerRadius(4)
-                            }
                         }
                     }
                     .chartXAxis {
-                        AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                        let formatter: DateFormatter = {
+                            let f = DateFormatter()
+                            f.dateFormat = "M/dd"
+                            return f
+                        }()
+
+                        AxisMarks(values: .stride(by: .day, count: 5)) { value in
                             AxisGridLine()
                             AxisTick()
-                            AxisValueLabel(format: .dateTime.month().day(), centered: true)
+                            AxisValueLabel {
+                                if let date = value.as(Date.self) {
+                                    Text(formatter.string(from: date))
+                                }
+                            }
                         }
                     }
                     .chartYScale(domain: minY...maxY)
-                    .chartScrollableAxes(.horizontal)
-                    .chartScrollPosition(x: $scrollPosition)
                     .chartOverlay { proxy in
                         GeometryReader { geo in
                             Rectangle().fill(Color.clear).contentShape(Rectangle())
@@ -168,6 +169,10 @@ struct GraphView: View {
                     minY = minRate
                     maxY = maxRate
                     isLoading = false
+                    if let lastDate = parsedRates.last?.date {
+                        scrollPosition = lastDate
+                    }
+
                 }
             } catch {
                 print("Chart decode error:", error)
