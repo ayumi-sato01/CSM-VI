@@ -27,3 +27,6 @@ Clone the Repository
    In Bash
    - git clone https://github.com/ayumi-sato01/CSM-VI.git
    - cd CSM-VI
+
+## Demo Walkthrough
+Watch this short demo to see how Zenny works:(coming soon)
