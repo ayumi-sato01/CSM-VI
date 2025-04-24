@@ -25,5 +25,5 @@ Zenny is an iOS application that allows users to track real-time currency exchan
 1. Clone the Repository
 
    <In bash>
-   git clone 
+   git clone https://github.com/ayumi-sato01/CSM-VI.git
    cd CSM-VI
