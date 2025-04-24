@@ -67,17 +67,28 @@ struct LogView: View {
                     .font(.headline)
 
                 ForEach(logs.sorted(by: { $0.timestamp > $1.timestamp })) { log in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(log.timestamp.formatted(date: .abbreviated, time: .shortened))
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Text("\(log.amount, specifier: "%.2f") \(log.base) → \(log.convertedAmount, specifier: "%.2f") \(log.target) @ \(log.rate, specifier: "%.4f")")
-                            .font(.subheadline)
-                        if !log.note.isEmpty {
-                            Text("\"\(log.note)\"")
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(log.timestamp.formatted(date: .abbreviated, time: .shortened))
                                 .font(.caption)
-                                .italic()
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.gray)
+                            Text("\(log.amount, specifier: "%.2f") \(log.base) → \(log.convertedAmount, specifier: "%.2f") \(log.target) @ \(log.rate, specifier: "%.4f")")
+                                .font(.subheadline)
+                            if !log.note.isEmpty {
+                                Text("\"\(log.note)\"")
+                                    .font(.caption)
+                                    .italic()
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        Spacer()
+
+                        Button(role: .destructive) {
+                            delete(log)
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
                         }
                     }
                     .padding(.vertical, 6)
@@ -160,12 +171,16 @@ struct LogView: View {
         }
     }
 
+    func delete(_ log: LogEntry) {
+        if let index = logs.firstIndex(where: { $0.id == log.id }) {
+            logs.remove(at: index)
+            saveLogs()
+        }
+    }
+
     func clearForm() {
         amount = ""
         note = ""
         date = Date()
     }
-}
-#Preview {
-    LogView()
 }
