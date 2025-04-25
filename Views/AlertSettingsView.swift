@@ -1,6 +1,13 @@
 import SwiftUI
 import UserNotifications
 
+struct RateDropAlert: Identifiable, Codable, Equatable {
+    var id = UUID()
+    var base: String
+    var target: String
+    var threshold: Double
+}
+
 struct AlertSettingsView: View {
     // Threshold alert settings
     @AppStorage("alertBaseCurrency") private var alertBaseCurrency = "USD"
@@ -13,15 +20,17 @@ struct AlertSettingsView: View {
     @AppStorage("dailyAlertHour") private var alertHour = 8
     @AppStorage("dailyAlertMinute") private var alertMinute = 0
 
-    @State private var isDailyAlertEnabled = false
+    @AppStorage("isDailyAlertEnabled") private var isDailyAlertEnabled = false
     @State private var currentRateText: String = ""
+    @AppStorage("savedRateAlerts") private var savedRateAlertsData: Data = Data()
+    @State private var savedRateAlerts: [RateDropAlert] = []
 
     let currencyList = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "KRW", "ZAR"]
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("🔔 Notification Settings")
+                Text("\u{1F514} Notification Settings")
                     .font(.title2)
                     .bold()
 
@@ -34,14 +43,14 @@ struct AlertSettingsView: View {
                         VStack(alignment: .leading) {
                             Text("From")
                             Picker("Base", selection: $alertBaseCurrency) {
-                                ForEach(currencyList, id: \.self) { Text($0) }
+                                ForEach(currencyList, id: \.self) { Text($0)}
                             }.pickerStyle(.menu)
                         }
 
                         VStack(alignment: .leading) {
                             Text("To")
                             Picker("Target", selection: $alertTargetCurrency) {
-                                ForEach(currencyList, id: \.self) { Text($0) }
+                                ForEach(currencyList, id: \.self) { Text($0)}
                             }.pickerStyle(.menu)
                         }
                     }
@@ -65,16 +74,45 @@ struct AlertSettingsView: View {
                             .font(.footnote)
                             .foregroundColor(.gray)
                     }
+
+                    // Current Alerts
+                    if !savedRateAlerts.isEmpty {
+                        Divider()
+                        Text("\u{1F4C8} Your current Rate Drop Alert")
+                            .font(.subheadline)
+                            .bold()
+
+                        ForEach(savedRateAlerts) { alert in
+                            HStack {
+                                Text("• \(alert.base) → \(alert.target) under \(String(format: "%.2f", alert.threshold))")
+                                    .font(.footnote)
+                                Spacer()
+                                Button(role: .destructive) {
+                                    deleteRateAlert(alert)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Divider()
 
+                // MARK: - Daily Notification
                 // MARK: - Daily Notification
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Daily Exchange Rate Notification")
                         .font(.headline)
 
                     Toggle("Enable Daily Alert", isOn: $isDailyAlertEnabled)
+                        .onChange(of: isDailyAlertEnabled) { oldValue, newValue in
+                            if newValue {
+                                scheduleDailyNotification()
+                            } else {
+                                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["dailyRateNotification"])
+                            }
+                        }
 
                     if isDailyAlertEnabled {
                         HStack {
@@ -105,13 +143,21 @@ struct AlertSettingsView: View {
                             displayedComponents: .hourAndMinute
                         )
 
-                        Button("Schedule Daily Alert") {
-                            scheduleDailyNotification()
+                        // These individual onChange calls replace the broken tuple version
+                        .onChange(of: dailyBase) {
+                            if isDailyAlertEnabled { scheduleDailyNotification() }
                         }
-                        .buttonStyle(.borderedProminent)
-
+                        .onChange(of: dailyTarget) {
+                            if isDailyAlertEnabled { scheduleDailyNotification() }
+                        }
+                        .onChange(of: alertHour) {
+                            if isDailyAlertEnabled { scheduleDailyNotification() }
+                        }
+                        .onChange(of: alertMinute) {
+                            if isDailyAlertEnabled { scheduleDailyNotification() }
+                        }
                         if let scheduledDate = Calendar.current.date(bySettingHour: alertHour, minute: alertMinute, second: 0, of: Date()) {
-                            Text("📅 Daily alert set at \(formattedTime(scheduledDate)) for \(dailyBase) → \(dailyTarget)")
+                            Text("\u{1F4C5} Daily alert set at \(formattedTime(scheduledDate)) for \(dailyBase) → \(dailyTarget)")
                                 .font(.footnote)
                                 .foregroundColor(.gray)
                         }
@@ -122,23 +168,46 @@ struct AlertSettingsView: View {
         }
         .onAppear {
             requestNotificationPermission()
+            loadRateAlerts()
         }
     }
 
-    // MARK: - Notification Permission
+    // MARK: - Save, Load, Delete Alerts
+    func saveRateAlerts() {
+        if let data = try? JSONEncoder().encode(savedRateAlerts) {
+            savedRateAlertsData = data
+        }
+    }
+
+    func loadRateAlerts() {
+        if let decoded = try? JSONDecoder().decode([RateDropAlert].self, from: savedRateAlertsData) {
+            savedRateAlerts = decoded
+        }
+    }
+
+    func deleteRateAlert(_ alert: RateDropAlert) {
+        savedRateAlerts.removeAll { $0 == alert }
+        saveRateAlerts()
+    }
+
+    // MARK: - Permissions
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
                 print("⚠️ Notification error: \(error.localizedDescription)")
-            } else {
-                print("🔔 Permission granted: \(granted)")
             }
         }
     }
 
-    // MARK: - Threshold Alert Check
+    // MARK: - Threshold Check
     func checkAndSendThresholdNotification() {
         guard let threshold = Double(alertRate) else { return }
+
+        let alertToSave = RateDropAlert(base: alertBaseCurrency, target: alertTargetCurrency, threshold: threshold)
+        if !savedRateAlerts.contains(alertToSave) {
+            savedRateAlerts.append(alertToSave)
+            saveRateAlerts()
+        }
 
         let urlString = "https://api.frankfurter.app/latest?from=\(alertBaseCurrency)&to=\(alertTargetCurrency)"
         guard let url = URL(string: urlString) else { return }
@@ -195,7 +264,6 @@ struct AlertSettingsView: View {
         }.resume()
     }
 
-    // MARK: - Time Formatter
     func formattedTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short

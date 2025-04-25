@@ -6,6 +6,9 @@ struct DashboardView: View {
     
     @AppStorage("dashboardBaseCurrency") private var base = "USD"
     @AppStorage("dashboardTargetCurrency") private var target = "JPY"
+    @AppStorage("hasAgreedToTerms") private var hasAgreedToTerms = false
+    @State private var showTerms = false
+
     
     @State private var liveRate: Double? = nil
     @State private var rates: [HistoricalRate] = []
@@ -118,6 +121,9 @@ struct DashboardView: View {
             .onAppear {
                 fetchLiveRate()
                 fetchRates()
+            }
+            .fullScreenCover(isPresented: .constant(!hasAgreedToTerms)) {
+                TermsOfUseView()
             }
         }
     }
