@@ -14,7 +14,6 @@ Zenny is an iOS application that allows users to track real-time currency exchan
 
 - Swift 5
 - SwiftUI
-- WidgetKit
 - Charts
 - UserNotifications
 - AppStorage for persistence
