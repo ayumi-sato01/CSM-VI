@@ -142,8 +142,6 @@ struct FavoriteRatesView: View {
 
         for pair in favoritePairs {
             let key = "\(pair.base)_\(pair.target)"
-
-            // Step 1: Get the latest available rate
             let latestURL = URL(string: "https://api.frankfurter.app/latest?from=\(pair.base)&to=\(pair.target)")!
             URLSession.shared.dataTask(with: latestURL) { data, _, _ in
                 if let data = data,
@@ -157,7 +155,6 @@ struct FavoriteRatesView: View {
                         completedRequests += 1
                     }
                     
-                    // Step 2: Get the previous day
                     if let latestDate = latestResult.date.toDate() {
                         let previousDate = Calendar.current.date(byAdding: .day, value: -1, to: latestDate)!
                         let formatter = DateFormatter()
@@ -206,7 +203,6 @@ struct ExchangeRateResponseWithDate: Codable {
     var rates: [String: Double]
 }
 
-// Helper to convert "yyyy-MM-dd" to Date
 extension String {
     func toDate() -> Date? {
         let formatter = DateFormatter()

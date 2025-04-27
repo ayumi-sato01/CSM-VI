@@ -34,7 +34,7 @@ struct AlertSettingsView: View {
                     .font(.title2)
                     .bold()
 
-                // MARK: - Threshold Alert
+                // Threshold Alert
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Rate Drop Alert")
                         .font(.headline)
@@ -99,7 +99,7 @@ struct AlertSettingsView: View {
 
                 Divider()
 
-                // MARK: - Daily Notification
+                // Daily Notification
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Daily Exchange Rate Notification")
                         .font(.headline)
@@ -142,7 +142,6 @@ struct AlertSettingsView: View {
                             displayedComponents: .hourAndMinute
                         )
 
-                        // These individual onChange calls replace the broken tuple version
                         .onChange(of: dailyBase) {
                             if isDailyAlertEnabled { scheduleDailyNotification() }
                         }
@@ -171,7 +170,7 @@ struct AlertSettingsView: View {
         }
     }
 
-    // MARK: - Save, Load, Delete Alerts
+    // Save, Load, Delete Alerts
     func saveRateAlerts() {
         if let data = try? JSONEncoder().encode(savedRateAlerts) {
             savedRateAlertsData = data
@@ -189,7 +188,7 @@ struct AlertSettingsView: View {
         saveRateAlerts()
     }
 
-    // MARK: - Permissions
+    //  Permissions
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
@@ -198,7 +197,7 @@ struct AlertSettingsView: View {
         }
     }
 
-    // MARK: - Threshold Check
+    // Threshold Check
     func checkAndSendThresholdNotification() {
         guard let threshold = Double(alertRate) else { return }
 
@@ -238,7 +237,7 @@ struct AlertSettingsView: View {
         }.resume()
     }
 
-    // MARK: - Daily Notification
+    // Daily Notification
     func scheduleDailyNotification() {
         let urlString = "https://api.frankfurter.app/latest?from=\(dailyBase)&to=\(dailyTarget)"
         guard let url = URL(string: urlString) else { return }
