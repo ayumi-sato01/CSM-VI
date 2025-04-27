@@ -100,7 +100,6 @@ struct AlertSettingsView: View {
                 Divider()
 
                 // MARK: - Daily Notification
-                // MARK: - Daily Notification
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Daily Exchange Rate Notification")
                         .font(.headline)

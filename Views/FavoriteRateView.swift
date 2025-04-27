@@ -9,8 +9,8 @@ struct FavoritePair: Identifiable, Codable, Hashable {
 struct FavoriteRatesView: View {
     @AppStorage("favoritePairs") private var favoritePairsData: Data = Data()
     @State private var favoritePairs: [FavoritePair] = []
-    @State private var todayRates: [String: Double] = [:]
-    @State private var yesterdayRates: [String: Double] = [:]
+    @State private var latestRates: [String: (rate: Double, date: String)] = [:]
+    @State private var previousRates: [String: (rate: Double, date: String)] = [:]
     @State private var isLoading = false
 
     @State private var selectedBase = "USD"
@@ -78,26 +78,26 @@ struct FavoriteRatesView: View {
                     List {
                         ForEach(favoritePairs) { pair in
                             let key = "\(pair.base)_\(pair.target)"
-                            let today = todayRates[key] ?? 0
-                            let yesterday = yesterdayRates[key] ?? 0
-                            let change = today - yesterday
-                            let symbol = change > 0 ? "🔺" : (change < 0 ? "🔻" : "➖")
+                            if let latest = latestRates[key], let previous = previousRates[key] {
+                                let change = latest.rate - previous.rate
+                                let symbol = change > 0 ? "🔺" : (change < 0 ? "🔻" : "➖")
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("\(pair.base) → \(pair.target)")
-                                    .font(.headline)
-                                Text("Today: \(String(format: "%.2f", today))")
-                                Text("Yesterday: \(String(format: "%.2f", yesterday))")
-                                Text("Change: \(symbol) \(String(format: "%.2f", abs(change)))")
-                                    .foregroundColor(change > 0 ? .green : (change < 0 ? .red : .gray))
-                            }
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    if let index = favoritePairs.firstIndex(of: pair) {
-                                        deletePairs(at: IndexSet(integer: index))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("\(pair.base) → \(pair.target)")
+                                        .font(.headline)
+                                    Text("Latest (\(latest.date)): \(String(format: "%.4f", latest.rate))")
+                                    Text("Previous (\(previous.date)): \(String(format: "%.4f", previous.rate))")
+                                    Text("Change: \(symbol) \(String(format: "%.5f", abs(change)))")
+                                        .foregroundColor(change > 0 ? .green : (change < 0 ? .red : .gray))
+                                }
+                                .swipeActions {
+                                    Button(role: .destructive) {
+                                        if let index = favoritePairs.firstIndex(of: pair) {
+                                            deletePairs(at: IndexSet(integer: index))
+                                        }
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
                                     }
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
                                 }
                             }
                         }
@@ -134,43 +134,83 @@ struct FavoriteRatesView: View {
 
     func fetchRates() {
         isLoading = true
-        todayRates = [:]
-        yesterdayRates = [:]
+        latestRates = [:]
+        previousRates = [:]
 
-        let today = Date()
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-
-        let yesterdayStr = formatter.string(from: yesterday)
+        var completedRequests = 0
+        let totalRequests = favoritePairs.count * 2
 
         for pair in favoritePairs {
             let key = "\(pair.base)_\(pair.target)"
 
-            // Today's rate
-            let todayURL = URL(string: "https://api.frankfurter.app/latest?from=\(pair.base)&to=\(pair.target)")!
-            URLSession.shared.dataTask(with: todayURL) { data, _, _ in
+            // Step 1: Get the latest available rate
+            let latestURL = URL(string: "https://api.frankfurter.app/latest?from=\(pair.base)&to=\(pair.target)")!
+            URLSession.shared.dataTask(with: latestURL) { data, _, _ in
                 if let data = data,
-                   let result = try? JSONDecoder().decode(ExchangeRateResponse.self, from: data),
-                   let rate = result.rates[pair.target] {
+                   let latestResult = try? JSONDecoder().decode(ExchangeRateResponseWithDate.self, from: data),
+                   let latestRate = latestResult.rates[pair.target] {
+                    
+                    let latestDateStr = latestResult.date
+                    
                     DispatchQueue.main.async {
-                        todayRates[key] = rate
+                        latestRates[key] = (latestRate, latestDateStr)
+                        completedRequests += 1
                     }
-                }
-            }.resume()
-
-            // Yesterday's rate
-            let yesterdayURL = URL(string: "https://api.frankfurter.app/\(yesterdayStr)?from=\(pair.base)&to=\(pair.target)")!
-            URLSession.shared.dataTask(with: yesterdayURL) { data, _, _ in
-                if let data = data,
-                   let result = try? JSONDecoder().decode(ExchangeRateResponse.self, from: data),
-                   let rate = result.rates[pair.target] {
+                    
+                    // Step 2: Get the previous day
+                    if let latestDate = latestResult.date.toDate() {
+                        let previousDate = Calendar.current.date(byAdding: .day, value: -1, to: latestDate)!
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd"
+                        let previousDateStr = formatter.string(from: previousDate)
+                        
+                        let previousURL = URL(string: "https://api.frankfurter.app/\(previousDateStr)?from=\(pair.base)&to=\(pair.target)")!
+                        URLSession.shared.dataTask(with: previousURL) { pdata, _, _ in
+                            if let pdata = pdata,
+                               let previousResult = try? JSONDecoder().decode(ExchangeRateResponseWithDate.self, from: pdata),
+                               let previousRate = previousResult.rates[pair.target] {
+                                DispatchQueue.main.async {
+                                    previousRates[key] = (previousRate, previousResult.date)
+                                    completedRequests += 1
+                                    if completedRequests == totalRequests {
+                                        isLoading = false
+                                    }
+                                }
+                            } else {
+                                DispatchQueue.main.async {
+                                    completedRequests += 1
+                                    if completedRequests == totalRequests {
+                                        isLoading = false
+                                    }
+                                }
+                            }
+                        }.resume()
+                    }
+                } else {
                     DispatchQueue.main.async {
-                        yesterdayRates[key] = rate
-                        isLoading = false
+                        completedRequests += 2 // because we won't fetch previous if failed
+                        if completedRequests == totalRequests {
+                            isLoading = false
+                        }
                     }
                 }
             }.resume()
         }
+    }
+}
+
+struct ExchangeRateResponseWithDate: Codable {
+    var amount: Double
+    var base: String
+    var date: String
+    var rates: [String: Double]
+}
+
+// Helper to convert "yyyy-MM-dd" to Date
+extension String {
+    func toDate() -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: self)
     }
 }

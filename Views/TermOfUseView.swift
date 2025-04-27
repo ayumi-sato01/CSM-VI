@@ -18,6 +18,7 @@ Welcome to Zenny! By using this app, you agree to the following:
 - Exchange rates are provided via third-party APIs and may not always be 100% accurate or up to date.
 - This app does not support exchange rate tracking for countries under U.S. sanctions.
 - Use of the app is at your own risk.
+- Exchage rates will not be updated on weekends and holidays.
 
 Please review the full Terms of Use before continuing.
 """)
