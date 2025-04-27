@@ -29,4 +29,4 @@ Clone the Repository
    - cd CSM-VI
 
 ## Demo Walkthrough
-Watch this short demo to see how Zenny works:(coming soon)
+Watch this short demo to see how Zenny works: https://youtu.be/86btjYUOWY4
